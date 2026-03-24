@@ -21,7 +21,7 @@ app.use(cors({
   methods: ['GET', 'POST']
 }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const io = new Server(server, {
   cors: {

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canlı Mezat — Sohbet</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #e8e8e8;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* --- HEADER --- */
+    .header {
+      background: #141414;
+      border-bottom: 1px solid #222;
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .status-badges {
+      display: flex;
+      gap: 10px;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #888;
+      transition: all 0.3s;
+    }
+
+    .badge.connected {
+      border-color: #22c55e44;
+      background: #0f2a1a;
+      color: #22c55e;
+    }
+
+    .badge.error {
+      border-color: #ef444444;
+      background: #2a0f0f;
+      color: #ef4444;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #444;
+      flex-shrink: 0;
+    }
+
+    .badge.connected .badge-dot {
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e;
+    }
+
+    .badge.error .badge-dot { background: #ef4444; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .counter {
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* --- FİLTRE --- */
+    .filter-bar {
+      background: #111;
+      border-bottom: 1px solid #1e1e1e;
+      padding: 8px 20px;
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid #2a2a2a;
+      background: transparent;
+      color: #777;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover { border-color: #444; color: #ccc; }
+
+    .filter-btn.active {
+      background: #4f87ff;
+      border-color: #4f87ff;
+      color: #fff;
+    }
+
+    .filter-btn.fb.active { background: #1877f2; border-color: #1877f2; }
+    .filter-btn.ig.active { background: #e1306c; border-color: #e1306c; }
+
+    /* --- SOHBET ALANI --- */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      scroll-behavior: smooth;
+    }
+
+    .chat-area::-webkit-scrollbar { width: 6px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+
+    /* --- YORUM KARTI --- */
+    .comment {
+      display: flex;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 4px;
+      transition: background 0.1s;
+      animation: slideIn 0.2s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .comment:hover { background: #161616; }
+
+    .comment-platform {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .comment-platform.facebook {
+      background: #1877f2;
+      color: #fff;
+    }
+
+    .comment-platform.instagram {
+      background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      color: #fff;
+    }
+
+    .comment-body { flex: 1; min-width: 0; }
+
+    .comment-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .comment-username {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .comment-time {
+      font-size: 11px;
+      color: #444;
+      flex-shrink: 0;
+    }
+
+    .comment-text {
+      font-size: 14px;
+      color: #d0d0d0;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    /* --- BOŞ DURUM --- */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #333;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .empty-state-icon { font-size: 48px; }
+    .empty-state h2 { font-size: 18px; color: #444; }
+    .empty-state p { font-size: 13px; color: #333; max-width: 280px; line-height: 1.5; }
+
+    /* --- FOOTER --- */
+    .footer {
+      background: #111;
+      border-top: 1px solid #1e1e1e;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .footer-info { font-size: 12px; color: #333; }
+
+    .scroll-btn {
+      background: #4f87ff;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .btn-logout-main {
+      background: transparent;
+      color: #555;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-logout-main:hover { color: #888; border-color: #444; }
+
+    /* --- RENK KODLAMASI --- */
+    .comment { cursor: pointer; }
+    .comment.fb-comment { border-left: 3px solid #1877f222; }
+    .comment.fb-comment:hover { background: #0d1a2e; border-left-color: #1877f2; }
+    .comment.ig-comment { border-left: 3px solid #e1306c22; }
+    .comment.ig-comment:hover { background: #2a0f1a; border-left-color: #e1306c; }
+
+    /* --- PLATFORM SAYAÇLARI --- */
+    .platform-counts { display: flex; gap: 10px; }
+    .pcount { font-size: 12px; }
+    .pcount.fb { color: #1877f255; }
+    .pcount.ig { color: #e1306c55; }
+    .pcount span { font-weight: 700; }
+
+    /* --- TOAST --- */
+    .toast {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: #22c55e;
+      color: #fff;
+      padding: 7px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      opacity: 0;
+      transition: all 0.25s;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <span class="header-title">🎯 Canlı Mezat</span>
+      <div class="status-badges">
+        <div class="badge" id="badge-fb">
+          <div class="badge-dot"></div>
+          <span>Facebook</span>
+        </div>
+        <div class="badge" id="badge-ig">
+          <div class="badge-dot"></div>
+          <span>Instagram</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="platform-counts">
+        <span class="pcount fb">F: <span id="fb-count">0</span></span>
+        <span class="pcount ig">I: <span id="ig-count">0</span></span>
+      </div>
+      <span class="counter" id="comment-counter">0 mesaj</span>
+      <button class="btn-logout-main" id="logout-btn">Çıkış</button>
+    </div>
+  </div>
+
+  <!-- FİLTRE -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all">Tümü</button>
+    <button class="filter-btn fb" data-filter="facebook">Facebook</button>
+    <button class="filter-btn ig" data-filter="instagram">Instagram</button>
+  </div>
+
+  <!-- SOHBET -->
+  <div class="chat-area" id="chat-area">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-state-icon">💬</div>
+      <h2>Yorum bekleniyor</h2>
+      <p>Chrome uzantısını açın, Facebook ve Instagram Live linklerini girin ve Başlat'a tıklayın.</p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span class="footer-info" id="footer-info">Bağlantı bekleniyor...</span>
+    <button class="scroll-btn" id="scroll-btn">↓ Yeni mesaj</button>
+  </div>
+
+  <div class="toast" id="toast">Kopyalandı!</div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const BACKEND = window.location.origin;
+    let currentFilter = 'all';
+    let commentCount = 0;
+    let fbCount = 0;
+    let igCount = 0;
+    let autoScroll = true;
+    let comments = [];
+
+    // Auth kontrolü — URL'den veya localStorage'dan token al
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('token');
+    if (urlToken) {
+      localStorage.setItem('cm_token', urlToken);
+    }
+    const token = localStorage.getItem('cm_token');
+    if (!token) {
+      window.location.href = '/';
+    }
+
+    // Socket bağlantısı
+    const socket = io(BACKEND, {
+      auth: { token },
+      transports: ['websocket'],
+      reconnection: true
+    });
+
+    socket.on('connect', () => {
+      setFooter('Bağlandı — yorumlar bekleniyor');
+    });
+
+    socket.on('connect_error', (err) => {
+      if (err.message === 'Yetkisiz erişim') {
+        localStorage.removeItem('cm_token');
+        window.location.href = '/';
+        return;
+      }
+      setFooter('Bağlantı hatası — yeniden bağlanılıyor...');
+    });
+
+    socket.on('disconnect', () => {
+      setFooter('Bağlantı kesildi...');
+    });
+
+    // Platform durum güncellemeleri
+    socket.on('status', (data) => {
+      const badgeId = data.platform === 'facebook' ? 'badge-fb' : 'badge-ig';
+      const badge = document.getElementById(badgeId);
+      badge.className = 'badge' + (data.connected ? ' connected' : '');
+    });
+
+    // Yeni yorum geldi
+    socket.on('comment', (data) => {
+      comments.push(data);
+      commentCount++;
+      if (data.platform === 'facebook') fbCount++;
+      else igCount++;
+      updateCounter();
+
+      if (currentFilter === 'all' || currentFilter === data.platform) {
+        appendComment(data);
+      }
+    });
+
+    // Yorum DOM'a ekle
+    function appendComment(data) {
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.remove();
+
+      const chatArea = document.getElementById('chat-area');
+      const el = createCommentEl(data);
+      chatArea.appendChild(el);
+
+      if (autoScroll) {
+        chatArea.scrollTop = chatArea.scrollHeight;
+      } else {
+        document.getElementById('scroll-btn').style.display = 'block';
+      }
+    }
+
+    function createCommentEl(data) {
+      const div = document.createElement('div');
+      const colorClass = data.platform === 'facebook' ? 'fb-comment' : 'ig-comment';
+      div.className = `comment ${colorClass}`;
+      div.dataset.platform = data.platform;
+      div.dataset.username = data.username;
+      div.dataset.text = data.text;
+
+      const platformLabel = data.platform === 'facebook' ? 'F' : 'I';
+      const time = formatTime(data.timestamp);
+
+      div.innerHTML = `
+        <div class="comment-platform ${data.platform}">${platformLabel}</div>
+        <div class="comment-body">
+          <div class="comment-header">
+            <span class="comment-username">${escHtml(data.username)}</span>
+            <span class="comment-time">${time}</span>
+          </div>
+          <div class="comment-text">${escHtml(data.text)}</div>
+        </div>
+      `;
+
+      div.addEventListener('click', () => {
+        const prefix = data.platform === 'facebook' ? 'F' : 'I';
+        const copyText = `${prefix}-${data.username}-${data.text}`;
+        navigator.clipboard.writeText(copyText).then(() => showToast());
+      });
+
+      return div;
+    }
+
+    function showToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    // Filtre
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        rebuildChat();
+      });
+    });
+
+    function rebuildChat() {
+      const chatArea = document.getElementById('chat-area');
+      chatArea.innerHTML = '';
+
+      const filtered = currentFilter === 'all'
+        ? comments
+        : comments.filter(c => c.platform === currentFilter);
+
+      if (filtered.length === 0) {
+        chatArea.innerHTML = `
+          <div class="empty-state" id="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <h2>Yorum yok</h2>
+            <p>Bu platformdan henüz yorum gelmedi.</p>
+          </div>`;
+        return;
+      }
+
+      for (const c of filtered) {
+        chatArea.appendChild(createCommentEl(c));
+      }
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    // Scroll takibi
+    const chatArea = document.getElementById('chat-area');
+    chatArea.addEventListener('scroll', () => {
+      const isAtBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight < 50;
+      autoScroll = isAtBottom;
+      if (isAtBottom) {
+        document.getElementById('scroll-btn').style.display = 'none';
+      }
+    });
+
+    document.getElementById('scroll-btn').addEventListener('click', () => {
+      chatArea.scrollTop = chatArea.scrollHeight;
+      autoScroll = true;
+      document.getElementById('scroll-btn').style.display = 'none';
+    });
+
+    // Çıkış
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('cm_token');
+      localStorage.removeItem('cm_username');
+      window.location.href = '/';
+    });
+
+    // Yardımcı
+    function updateCounter() {
+      document.getElementById('comment-counter').textContent = `${commentCount} mesaj`;
+      document.getElementById('fb-count').textContent = fbCount;
+      document.getElementById('ig-count').textContent = igCount;
+    }
+
+    function setFooter(text) {
+      document.getElementById('footer-info').textContent = text;
+    }
+
+    function formatTime(ts) {
+      try {
+        const d = new Date(ts);
+        return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch { return ''; }
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
