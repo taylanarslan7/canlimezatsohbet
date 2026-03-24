@@ -155,6 +155,15 @@ io.on('connection', (socket) => {
   });
 });
 
+// /chat ve /:username/chat → chat sayfası
+app.get('/chat', (req, res) => {
+  res.sendFile('chat.html', { root: path.join(__dirname, 'public') });
+});
+
+app.get('/:username/chat', (req, res) => {
+  res.sendFile('chat.html', { root: path.join(__dirname, 'public') });
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Canlı Mezat Sohbet sunucusu çalışıyor: http://localhost:${PORT}`);

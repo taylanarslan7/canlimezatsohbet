@@ -158,6 +158,15 @@ chrome.storage.local.get(['token'], (data) => {
   if (data.token) initSocket(data.token);
 });
 
+// İkon tıklanınca web paneli aç
+chrome.action.onClicked.addListener(() => {
+  const PANEL = 'https://canlimezatsohbet-production.up.railway.app';
+  chrome.storage.local.get(['token'], (data) => {
+    const url = data.token ? `${PANEL}/chat` : PANEL;
+    chrome.tabs.create({ url });
+  });
+});
+
 // Sekme kapanırsa durumu güncelle
 chrome.tabs.onRemoved.addListener((tabId) => {
   for (const platform of ['facebook', 'instagram']) {

@@ -11,13 +11,13 @@
   ],
   "host_permissions": [
     "https://www.facebook.com/*",
-    "https://www.instagram.com/*"
+    "https://www.instagram.com/*",
+    "https://canlimezatsohbet-production.up.railway.app/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
   },
   "action": {
-    "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
