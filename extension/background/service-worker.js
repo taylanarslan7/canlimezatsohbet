@@ -1,7 +1,7 @@
 // Socket.io'yu uzantıdan yükle (en üstte olmalı)
 importScripts('./socket.io.min.js');
 
-const BACKEND_URL = 'http://localhost:3000';
+const BACKEND_URL = 'https://canlimezatsohbet-production.up.railway.app';
 
 const activeTabs = { facebook: null, instagram: null };
 const platformStatus = { facebook: 'disconnected', instagram: 'disconnected' };
@@ -33,6 +33,15 @@ function initSocket(tok) {
 
   socket.on('connect_error', (err) => {
     console.error('[CanlıMezat] Bağlantı hatası:', err.message);
+  });
+
+  // Chat panelinden gelen başlat/durdur komutları
+  socket.on('command', (cmd) => {
+    if (cmd.type === 'START_PLATFORM') {
+      handleStart(cmd.platform, cmd.url);
+    } else if (cmd.type === 'STOP_PLATFORM') {
+      handleStop(cmd.platform);
+    }
   });
 }
 

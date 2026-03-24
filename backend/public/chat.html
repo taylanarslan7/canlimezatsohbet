@@ -325,6 +325,80 @@
       white-space: nowrap;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* --- YAYIN KONTROL PANELİ --- */
+    .control-panel {
+      background: #111;
+      border-bottom: 1px solid #1e1e1e;
+      padding: 12px 20px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .control-panel.open { display: flex; }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-label {
+      font-size: 12px;
+      font-weight: 700;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #fff;
+    }
+    .control-label.fb { background: #1877f2; }
+    .control-label.ig { background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); }
+
+    .control-input {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      color: #e8e8e8;
+      font-size: 12px;
+      padding: 6px 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .control-input:focus { border-color: #444; }
+    .control-input::placeholder { color: #444; }
+
+    .ctrl-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .ctrl-btn:hover { opacity: 0.85; }
+    .ctrl-btn.start { background: #22c55e; color: #fff; }
+    .ctrl-btn.stop  { background: #ef4444; color: #fff; display: none; }
+
+    .btn-control-toggle {
+      background: transparent;
+      color: #555;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-control-toggle:hover { color: #aaa; border-color: #444; }
+    .btn-control-toggle.active { color: #22c55e; border-color: #22c55e44; }
   </style>
 </head>
 <body>
@@ -351,7 +425,24 @@
         <span class="pcount ig">I: <span id="ig-count">0</span></span>
       </div>
       <span class="counter" id="comment-counter">0 mesaj</span>
+      <button class="btn-control-toggle" id="control-toggle">⚙ Yayın</button>
       <button class="btn-logout-main" id="logout-btn">Çıkış</button>
+    </div>
+  </div>
+
+  <!-- YAYIN KONTROL PANELİ -->
+  <div class="control-panel" id="control-panel">
+    <div class="control-row">
+      <div class="control-label fb">F</div>
+      <input class="control-input" id="ctrl-fb-url" type="url" placeholder="Facebook Live linki...">
+      <button class="ctrl-btn start" id="ctrl-fb-start">Başlat</button>
+      <button class="ctrl-btn stop"  id="ctrl-fb-stop">Durdur</button>
+    </div>
+    <div class="control-row">
+      <div class="control-label ig">I</div>
+      <input class="control-input" id="ctrl-ig-url" type="url" placeholder="Instagram Live linki...">
+      <button class="ctrl-btn start" id="ctrl-ig-start">Başlat</button>
+      <button class="ctrl-btn stop"  id="ctrl-ig-stop">Durdur</button>
     </div>
   </div>
 
@@ -472,14 +563,6 @@
       const el = document.getElementById('broadcast-timer');
       el.classList.remove('active');
     }
-
-    // Platform durum güncellemeleri
-    socket.on('status', (data) => {
-      const badgeId = data.platform === 'facebook' ? 'badge-fb' : 'badge-ig';
-      const badge = document.getElementById(badgeId);
-      badge.className = 'badge' + (data.connected ? ' connected' : '');
-      if (data.connected) startTimer();
-    });
 
     // Yeni yorum geldi
     socket.on('comment', (data) => {
@@ -620,6 +703,56 @@
       document.getElementById('font-label').textContent = size;
       localStorage.setItem('cm_fontsize', size);
     }
+
+    // --- YAYIN KONTROL PANELİ ---
+    document.getElementById('control-toggle').addEventListener('click', () => {
+      const panel = document.getElementById('control-panel');
+      const btn = document.getElementById('control-toggle');
+      panel.classList.toggle('open');
+      btn.classList.toggle('active');
+    });
+
+    // Kaydedilmiş linkleri yükle
+    const savedFbUrl = localStorage.getItem('cm_fb_url');
+    const savedIgUrl = localStorage.getItem('cm_ig_url');
+    if (savedFbUrl) document.getElementById('ctrl-fb-url').value = savedFbUrl;
+    if (savedIgUrl) document.getElementById('ctrl-ig-url').value = savedIgUrl;
+
+    function setPlatformState(platform, running) {
+      const startBtn = document.getElementById(`ctrl-${platform === 'facebook' ? 'fb' : 'ig'}-start`);
+      const stopBtn  = document.getElementById(`ctrl-${platform === 'facebook' ? 'fb' : 'ig'}-stop`);
+      startBtn.style.display = running ? 'none'  : '';
+      stopBtn.style.display  = running ? ''      : 'none';
+    }
+
+    document.getElementById('ctrl-fb-start').addEventListener('click', () => {
+      const url = document.getElementById('ctrl-fb-url').value.trim();
+      if (!url || !url.includes('facebook.com')) { alert('Geçerli bir Facebook Live linki girin.'); return; }
+      localStorage.setItem('cm_fb_url', url);
+      socket.emit('start_platform', { platform: 'facebook', url });
+    });
+    document.getElementById('ctrl-fb-stop').addEventListener('click', () => {
+      socket.emit('stop_platform', { platform: 'facebook' });
+    });
+
+    document.getElementById('ctrl-ig-start').addEventListener('click', () => {
+      const url = document.getElementById('ctrl-ig-url').value.trim();
+      if (!url || !url.includes('instagram.com')) { alert('Geçerli bir Instagram Live linki girin.'); return; }
+      localStorage.setItem('cm_ig_url', url);
+      socket.emit('start_platform', { platform: 'instagram', url });
+    });
+    document.getElementById('ctrl-ig-stop').addEventListener('click', () => {
+      socket.emit('stop_platform', { platform: 'instagram' });
+    });
+
+    // Platform bağlandı/koptu → buton durumunu güncelle
+    socket.on('status', (data) => {
+      const badgeId = data.platform === 'facebook' ? 'badge-fb' : 'badge-ig';
+      const badge = document.getElementById(badgeId);
+      badge.className = 'badge' + (data.connected ? ' connected' : '');
+      setPlatformState(data.platform, data.connected);
+      if (data.connected) startTimer();
+    });
 
     document.getElementById('logout-btn').addEventListener('click', () => {
       localStorage.removeItem('cm_token');

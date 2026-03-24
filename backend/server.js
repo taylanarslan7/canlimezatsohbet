@@ -141,14 +141,18 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Chat panelinden başlat/durdur komutu → extension'a ilet
+  socket.on('start_platform', (data) => {
+    io.to(`user:${username}`).emit('command', { type: 'START_PLATFORM', platform: data.platform, url: data.url });
+  });
+
+  socket.on('stop_platform', (data) => {
+    io.to(`user:${username}`).emit('command', { type: 'STOP_PLATFORM', platform: data.platform });
+  });
+
   socket.on('disconnect', () => {
     console.log(`[-] Ayrıldı: ${username} (${socket.id})`);
   });
-});
-
-// /username/chat gibi temiz URL'leri destekle
-app.get('/:username/chat', (req, res) => {
-  res.sendFile('chat.html', { root: path.join(__dirname, 'public') });
 });
 
 const PORT = process.env.PORT || 3000;
