@@ -273,6 +273,14 @@
     .comment.ig-comment { border-left: 3px solid #e1306c22; }
     .comment.ig-comment:hover { background: #2a0f1a; border-left-color: #e1306c; }
 
+    /* --- KRONOMETRe --- */
+    .broadcast-timer {
+      font-size: 12px;
+      color: #555;
+      font-variant-numeric: tabular-nums;
+    }
+    .broadcast-timer.active { color: #22c55e; }
+
     /* --- PLATFORM SAYAÇLARI --- */
     .platform-counts { display: flex; gap: 10px; }
     .pcount { font-size: 12px; }
@@ -318,6 +326,7 @@
       </div>
     </div>
     <div class="header-right">
+      <span class="broadcast-timer" id="broadcast-timer">Yayın: —</span>
       <div class="platform-counts">
         <span class="pcount fb">F: <span id="fb-count">0</span></span>
         <span class="pcount ig">I: <span id="ig-count">0</span></span>
@@ -403,11 +412,38 @@
       window.location.href = '/';
     });
 
+    // --- KRONOMETRe ---
+    let broadcastStart = null;
+    let timerInterval = null;
+
+    function startTimer() {
+      if (timerInterval) return;
+      broadcastStart = Date.now();
+      const el = document.getElementById('broadcast-timer');
+      el.classList.add('active');
+      timerInterval = setInterval(() => {
+        const secs = Math.floor((Date.now() - broadcastStart) / 1000);
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        el.textContent = h > 0
+          ? `Yayın: ${h}s ${String(m).padStart(2,'0')}dk`
+          : `Yayın: ${m}dk ${String(s).padStart(2,'0')}sn`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      const el = document.getElementById('broadcast-timer');
+      el.classList.remove('active');
+    }
+
     // Platform durum güncellemeleri
     socket.on('status', (data) => {
       const badgeId = data.platform === 'facebook' ? 'badge-fb' : 'badge-ig';
       const badge = document.getElementById(badgeId);
       badge.className = 'badge' + (data.connected ? ' connected' : '');
+      if (data.connected) startTimer();
     });
 
     // Yeni yorum geldi
