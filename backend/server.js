@@ -6,26 +6,41 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const server = http.createServer(app);
 
+if (!process.env.JWT_SECRET) {
+  console.warn('[UYARI] JWT_SECRET environment variable tanımlı değil! Lütfen Railway\'de ayarlayın.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'canlimezat-gizli-anahtar-2026';
 
 // Basit kullanıcı veritabanı (gerçek uygulamada DB kullanılır)
 // Kullanıcı eklemek için users.js dosyasını düzenleyin
 const USERS = require('./users');
 
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://canlimezatsohbet-production.up.railway.app';
+
 app.use(cors({
-  origin: '*',
+  origin: ALLOWED_ORIGIN,
   methods: ['GET', 'POST']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Login: IP başına 15 dakikada en fazla 10 deneme
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Çok fazla giriş denemesi. 15 dakika sonra tekrar deneyin.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: ALLOWED_ORIGIN,
     methods: ['GET', 'POST']
   }
 });
@@ -36,7 +51,7 @@ const activeTokenIds = new Map(); // username -> tokenId
 
 // --- AUTH ---
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
 
   const user = USERS.find(u => u.username === username);
@@ -115,43 +130,51 @@ io.on('connection', (socket) => {
   // Extension bağlandığında kullanıcıya ait odaya katıl
   socket.join(`user:${username}`);
 
+  const PLATFORMS = ['facebook', 'instagram'];
+
   // Extension'dan yorum geldiğinde frontend'e ilet
   socket.on('comment', (data) => {
+    if (!PLATFORMS.includes(data.platform)) return;
+    if (typeof data.username !== 'string' || typeof data.text !== 'string') return;
+
     const comment = {
       id: uuidv4(),
-      platform: data.platform,       // 'facebook' | 'instagram'
-      username: data.username,
-      text: data.text,
+      platform: data.platform,
+      username: data.username.slice(0, 100),
+      text: data.text.slice(0, 1000),
       timestamp: data.timestamp || new Date().toISOString(),
       receivedAt: new Date().toISOString()
     };
 
     console.log(`[${comment.platform.toUpperCase()}] ${comment.username}: ${comment.text}`);
-
-    // Aynı kullanıcının tüm bağlı istemcilerine gönder (frontend dahil)
     io.to(`user:${username}`).emit('comment', comment);
   });
 
   // Bağlantı durumu bildirimi
   socket.on('status', (data) => {
+    if (!PLATFORMS.includes(data.platform)) return;
     io.to(`user:${username}`).emit('status', {
       platform: data.platform,
-      connected: data.connected,
+      connected: !!data.connected,
       timestamp: new Date().toISOString()
     });
   });
 
-  // Chat panelinden başlat/durdur komutu → extension'a ilet
   // Chat paneli bağlandığında service worker'dan güncel durumu ister
   socket.on('request_status', () => {
     io.to(`user:${username}`).emit('request_status');
   });
 
   socket.on('start_platform', (data) => {
-    io.to(`user:${username}`).emit('command', { type: 'START_PLATFORM', platform: data.platform, url: data.url });
+    if (!PLATFORMS.includes(data.platform)) return;
+    if (typeof data.url !== 'string') return;
+    const url = data.url.slice(0, 500);
+    if (!url.startsWith('https://www.facebook.com/') && !url.startsWith('https://www.instagram.com/')) return;
+    io.to(`user:${username}`).emit('command', { type: 'START_PLATFORM', platform: data.platform, url });
   });
 
   socket.on('stop_platform', (data) => {
+    if (!PLATFORMS.includes(data.platform)) return;
     io.to(`user:${username}`).emit('command', { type: 'STOP_PLATFORM', platform: data.platform });
   });
 
