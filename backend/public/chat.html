@@ -405,6 +405,17 @@
       window.location.href = '/';
     }
 
+    // URL'i temizle: token parametresi yerine /username/chat göster
+    if (urlToken) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const uname = payload.username || 'chat';
+        history.replaceState({}, '', '/' + uname + '/chat');
+      } catch (e) {
+        history.replaceState({}, '', '/chat');
+      }
+    }
+
     // Socket bağlantısı
     const socket = io(BACKEND, {
       auth: { token },
