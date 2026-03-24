@@ -153,6 +153,11 @@ function sendComment(msg) {
   });
 }
 
+// Uzantı başladığında token varsa soketi otomatik bağla
+chrome.storage.local.get(['token'], (data) => {
+  if (data.token) initSocket(data.token);
+});
+
 // Sekme kapanırsa durumu güncelle
 chrome.tabs.onRemoved.addListener((tabId) => {
   for (const platform of ['facebook', 'instagram']) {
