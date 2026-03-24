@@ -396,6 +396,13 @@
       setFooter('Bağlantı kesildi...');
     });
 
+    // Başka cihazdan giriş yapıldı
+    socket.on('session_expired', () => {
+      localStorage.removeItem('cm_token');
+      alert('Başka bir cihazdan giriş yapıldı. Oturumunuz kapatıldı.');
+      window.location.href = '/';
+    });
+
     // Platform durum güncellemeleri
     socket.on('status', (data) => {
       const badgeId = data.platform === 'facebook' ? 'badge-fb' : 'badge-ig';

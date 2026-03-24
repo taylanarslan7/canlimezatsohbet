@@ -30,8 +30,9 @@ const io = new Server(server, {
   }
 });
 
-// Aktif oturumlar: token -> { username, socketId, rooms }
-const activeSessions = new Map();
+// Her kullanıcının geçerli token ID'si — login olunca güncellenir
+// Farklı bir token ID'siyle bağlanmaya çalışanlar reddedilir
+const activeTokenIds = new Map(); // username -> tokenId
 
 // --- AUTH ---
 
@@ -48,7 +49,15 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ error: 'Kullanıcı adı veya şifre hatalı' });
   }
 
-  const token = jwt.sign({ username, id: uuidv4() }, JWT_SECRET, { expiresIn: '24h' });
+  const tokenId = uuidv4();
+  const token = jwt.sign({ username, id: tokenId }, JWT_SECRET, { expiresIn: '24h' });
+
+  // Önceki oturumu geçersiz kıl
+  activeTokenIds.set(username, tokenId);
+
+  // Eski token ile bağlı tüm socketleri kopar
+  io.to(`user:${username}`).emit('session_expired');
+
   res.json({ token, username });
 });
 
@@ -56,6 +65,11 @@ app.post('/api/verify', (req, res) => {
   const { token } = req.body;
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    // Token ID hâlâ geçerli mi?
+    const currentId = activeTokenIds.get(decoded.username);
+    if (currentId && currentId !== decoded.id) {
+      return res.json({ valid: false });
+    }
     res.json({ valid: true, username: decoded.username });
   } catch {
     res.json({ valid: false });
@@ -78,6 +92,18 @@ io.use((socket, next) => {
   if (!user) {
     return next(new Error('Yetkisiz erişim'));
   }
+
+  // Token ID kontrolü — başkası giriş yapmışsa reddet
+  const currentId = activeTokenIds.get(user.username);
+  if (currentId && currentId !== user.id) {
+    return next(new Error('Başka bir cihazdan giriş yapıldı'));
+  }
+
+  // İlk bağlantıda token ID'yi kaydet (sunucu yeniden başlatılmışsa)
+  if (!currentId) {
+    activeTokenIds.set(user.username, user.id);
+  }
+
   socket.user = user;
   next();
 });
