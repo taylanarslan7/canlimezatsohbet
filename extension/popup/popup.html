@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canlı Mezat Sohbet</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <!-- GİRİŞ EKRANI -->
+  <div id="screen-login">
+    <div class="logo">
+      <span class="logo-icon">🎯</span>
+      <h1>Canlı Mezat</h1>
+      <p>Sohbet Birleştirici</p>
+    </div>
+    <form id="login-form">
+      <div class="input-group">
+        <label>Kullanıcı Adı</label>
+        <input type="text" id="username" placeholder="kullanıcı adınız" autocomplete="username" required>
+      </div>
+      <div class="input-group">
+        <label>Şifre</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <div id="login-error" class="error hidden"></div>
+      <button type="submit" id="login-btn">Giriş Yap</button>
+    </form>
+  </div>
+
+  <!-- ANA EKRAN -->
+  <div id="screen-main" class="hidden">
+    <div class="header">
+      <div class="user-info">
+        <span class="user-icon">👤</span>
+        <span id="logged-username"></span>
+      </div>
+      <button id="logout-btn" class="btn-logout">Çıkış</button>
+    </div>
+
+    <div class="section">
+      <h2>Facebook Live</h2>
+      <div class="status-row">
+        <span class="status-dot" id="fb-status-dot"></span>
+        <span id="fb-status-text">Bağlı değil</span>
+      </div>
+      <div class="input-group">
+        <input type="url" id="fb-url" placeholder="https://www.facebook.com/.../live">
+      </div>
+      <div class="btn-row">
+        <button id="fb-start-btn" class="btn-start">Başlat</button>
+        <button id="fb-stop-btn" class="btn-stop hidden">Durdur</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <h2>Instagram Live</h2>
+      <div class="status-row">
+        <span class="status-dot" id="ig-status-dot"></span>
+        <span id="ig-status-text">Bağlı değil</span>
+      </div>
+      <div class="input-group">
+        <input type="url" id="ig-url" placeholder="https://www.instagram.com/.../live">
+      </div>
+      <div class="btn-row">
+        <button id="ig-start-btn" class="btn-start">Başlat</button>
+        <button id="ig-stop-btn" class="btn-stop hidden">Durdur</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-link">
+      <a id="open-panel-btn" href="#" target="_blank">🖥️ Sohbet Panelini Aç</a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
