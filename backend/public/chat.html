@@ -253,6 +253,25 @@
       display: none;
     }
 
+    /* --- YAZI BOYUTU --- */
+    .font-controls { display: flex; align-items: center; gap: 4px; }
+    .font-btn {
+      background: transparent;
+      color: #555;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      width: 26px;
+      height: 26px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .font-btn:hover { color: #aaa; border-color: #444; }
+    .font-size-label { font-size: 11px; color: #444; min-width: 24px; text-align: center; }
+
     .btn-logout-main {
       background: transparent;
       color: #555;
@@ -355,6 +374,11 @@
   <!-- FOOTER -->
   <div class="footer">
     <span class="footer-info" id="footer-info">Bağlantı bekleniyor...</span>
+    <div class="font-controls">
+      <button class="font-btn" id="font-down">−</button>
+      <span class="font-size-label" id="font-label">14</span>
+      <button class="font-btn" id="font-up">+</button>
+    </div>
     <button class="scroll-btn" id="scroll-btn">↓ Yeni mesaj</button>
   </div>
 
@@ -497,6 +521,10 @@
         </div>
       `;
 
+      // Mevcut font boyutunu uygula
+      div.querySelector('.comment-text').style.fontSize = fontSize + 'px';
+      div.querySelector('.comment-username').style.fontSize = (fontSize - 1) + 'px';
+
       div.addEventListener('click', () => {
         const prefix = data.platform === 'facebook' ? 'F' : 'I';
         const copyText = `${prefix}-${data.username}-${data.text}`;
@@ -563,6 +591,25 @@
     });
 
     // Çıkış
+    // Yazı boyutu
+    const FONT_MIN = 11, FONT_MAX = 28;
+    let fontSize = parseInt(localStorage.getItem('cm_fontsize') || '14');
+    applyFontSize(fontSize);
+
+    document.getElementById('font-up').addEventListener('click', () => {
+      if (fontSize < FONT_MAX) { fontSize++; applyFontSize(fontSize); }
+    });
+    document.getElementById('font-down').addEventListener('click', () => {
+      if (fontSize > FONT_MIN) { fontSize--; applyFontSize(fontSize); }
+    });
+
+    function applyFontSize(size) {
+      document.querySelectorAll('.comment-text').forEach(el => el.style.fontSize = size + 'px');
+      document.querySelectorAll('.comment-username').forEach(el => el.style.fontSize = (size - 1) + 'px');
+      document.getElementById('font-label').textContent = size;
+      localStorage.setItem('cm_fontsize', size);
+    }
+
     document.getElementById('logout-btn').addEventListener('click', () => {
       localStorage.removeItem('cm_token');
       localStorage.removeItem('cm_username');
