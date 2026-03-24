@@ -174,6 +174,9 @@ chrome.tabs.onRemoved.addListener((tabId) => {
       activeTabs[platform] = null;
       platformStatus[platform] = 'disconnected';
       chrome.runtime.sendMessage({ type: 'STATUS_UPDATE', platform, status: 'disconnected' }).catch(() => {});
+      if (socket && socket.connected) {
+        socket.emit('status', { platform, connected: false });
+      }
     }
   }
 });
