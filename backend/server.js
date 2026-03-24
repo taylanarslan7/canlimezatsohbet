@@ -142,6 +142,11 @@ io.on('connection', (socket) => {
   });
 
   // Chat panelinden başlat/durdur komutu → extension'a ilet
+  // Chat paneli bağlandığında service worker'dan güncel durumu ister
+  socket.on('request_status', () => {
+    io.to(`user:${username}`).emit('request_status');
+  });
+
   socket.on('start_platform', (data) => {
     io.to(`user:${username}`).emit('command', { type: 'START_PLATFORM', platform: data.platform, url: data.url });
   });

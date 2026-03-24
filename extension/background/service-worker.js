@@ -29,10 +29,21 @@ function initSocket(tok) {
 
   socket.on('connect', () => {
     console.log('[CanlıMezat] Backend bağlantısı kuruldu.');
+    // Chat paneline mevcut platform durumlarını bildir
+    for (const platform of ['facebook', 'instagram']) {
+      socket.emit('status', { platform, connected: platformStatus[platform] === 'connected' });
+    }
   });
 
   socket.on('connect_error', (err) => {
     console.error('[CanlıMezat] Bağlantı hatası:', err.message);
+  });
+
+  // Chat paneli durum sorgulayınca yanıt ver
+  socket.on('request_status', () => {
+    for (const platform of ['facebook', 'instagram']) {
+      socket.emit('status', { platform, connected: platformStatus[platform] === 'connected' });
+    }
   });
 
   // Chat panelinden gelen başlat/durdur komutları
@@ -156,6 +167,15 @@ function sendComment(msg) {
 // Uzantı başladığında token varsa soketi otomatik bağla
 chrome.storage.local.get(['token'], (data) => {
   if (data.token) initSocket(data.token);
+});
+
+// Service worker'ı canlı tut — Chrome her dakika uyandırır, soket kopmuşsa yeniden bağlar
+chrome.alarms.create('keepalive', { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name !== 'keepalive') return;
+  chrome.storage.local.get(['token'], (data) => {
+    if (data.token) initSocket(data.token);
+  });
 });
 
 // İkon tıklanınca web paneli aç

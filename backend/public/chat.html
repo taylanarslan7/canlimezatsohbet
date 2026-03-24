@@ -520,6 +520,8 @@
 
     socket.on('connect', () => {
       setFooter('Bağlandı — yorumlar bekleniyor');
+      // Uzantıdan güncel platform durumlarını iste
+      socket.emit('request_status');
     });
 
     socket.on('connect_error', (err) => {
